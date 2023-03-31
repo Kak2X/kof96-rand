@@ -1413,7 +1413,7 @@ mStartFlipPortrait: MACRO
 	
 	
 	; Toggle between original and alterate depending on the currently active character.
-	cp   \2/2	; Is normal character selectable?
+	cp   \2				; Is normal character selectable?
 	jr   z, .setAlt_\@	; If so, jump (switch to alternate)
 .setNorm_\@:
 	;
@@ -1421,7 +1421,7 @@ mStartFlipPortrait: MACRO
 	;
 	
 	; Set normal character ID (ie: CHAR_ID_IORI) to wCharSelIdMapTbl entry
-	ld   [hl], \2/2		
+	ld   [hl], \2		
 	
 	; Display and start tile flipping anim (alt to norm)
 	ld   de, \1
@@ -1440,7 +1440,7 @@ mStartFlipPortrait: MACRO
 	;
 	
 	; Set alternate character ID (ie: CHAR_ID_OIORI) to wCharSelIdMapTbl entry
-	ld   [hl], \5/2
+	ld   [hl], \5
 	
 	; Display and start tile flipping anim (norm to alt)
 	ld   de, \1
@@ -2439,7 +2439,7 @@ CharSel_DrawP2CharIconForNew:
 ; - A: Character ID to draw
 CharSel_DrawP1CharIcon:
 	push af
-	sla  a					; A *= 2
+	;sla  a					; A *= 2
 	call Char_DrawIconFlipX
 	pop  af
 	ret
@@ -2448,7 +2448,7 @@ CharSel_DrawP1CharIcon:
 ; Draws the icon for the specified character on the player 2 side to the tilemap.
 CharSel_DrawP2CharIcon:
 	push af
-	sla  a					; A *= 2
+	;sla  a					; A *= 2
 	call Char_DrawIcon
 	pop  af
 	ret
@@ -2742,7 +2742,7 @@ CharSel_PrintCharName:
 			; DE = CharSel_CharNameBGPtrTbl[CharId]
 			push bc
 				ld   a, b							; A = CharId * 2
-				sla  a
+				;sla  a
 				ld   bc, CharSel_CharNameBGPtrTbl	; BC = VRAM Ptr table
 				ld   h, $00							; HL = A
 				ld   l, a
@@ -2756,7 +2756,7 @@ CharSel_PrintCharName:
 			; Get the ptr to the TextC structure off the table
 			; HL = CharSel_CharNamePtrTable[CharId]
 			ld   a, b							; A = CharId * 2
-			sla  a
+			;sla  a
 			ld   bc, CharSel_CharNamePtrTable	; BC = Text ptr table
 			ld   h, $00							; HL = A
 			ld   l, a
@@ -3095,7 +3095,7 @@ CharSel_SetPlInfo:
 	; all multiplied by 2, to work as-is with ptr tables.
 	ld   de, wCharSelP1Char0		; DE = Ptr to 1st team member
 	ld   a, [de]					; A = CharId * 2
-	sla  a
+	;sla  a
 	
 	; Copy to current character ID (first to fight)
 	ld   hl, wPlInfo_Pl1+iPlInfo_CharId
@@ -3108,7 +3108,7 @@ CharSel_SetPlInfo:
 	; Like the other, but for 2P
 	ld   de, wCharSelP2Char0
 	ld   a, [de]
-	sla  a
+	;sla  a
 	
 	ld   hl, wPlInfo_Pl2+iPlInfo_CharId
 	ld   [hl], a
@@ -3131,7 +3131,7 @@ CharSel_SetPlInfo:
 	ld   a, [de]		; A = CharId
 	cp   CHAR_ID_NONE	; Is this an empty slot?
 	jr   z, .noMul		; If so, jump
-	sla  a				; CharId *= 2
+	;sla  a				; CharId *= 2
 .noMul:
 	ld   [hl], a		; Write it
 	inc  hl				; Next team member
@@ -3449,15 +3449,15 @@ CharSelect_IsLastWinner:
 ; CHARSEL_ID_* -> CHAR_ID_* mapping table.
 ; The chars declarations below are organized like how they appear in the character select screen.
 CharSel_IdMapTbl:
-	db CHAR_ID_KYO/2,    CHAR_ID_ANDY/2,    CHAR_ID_TERRY/2,    CHAR_ID_RYO/2,      CHAR_ID_ROBERT/2,  CHAR_ID_IORI/2
-	db CHAR_ID_DAIMON/2, CHAR_ID_MAI/2,     CHAR_ID_GEESE/2,    CHAR_ID_MRBIG/2,    CHAR_ID_KRAUSER/2, CHAR_ID_MATURE/2
-	db CHAR_ID_ATHENA/2, CHAR_ID_CHIZURU/2, CHAR_ID_MRKARATE/2, CHAR_ID_ROULETTE/2, CHAR_ID_GOENITZ/2, CHAR_ID_LEONA/2
+	db CHAR_ID_KYO,    CHAR_ID_ANDY,    CHAR_ID_TERRY,    CHAR_ID_RYO,      CHAR_ID_ROBERT,  CHAR_ID_IORI
+	db CHAR_ID_DAIMON, CHAR_ID_MAI,     CHAR_ID_GEESE,    CHAR_ID_MRBIG,    CHAR_ID_KRAUSER, CHAR_ID_MATURE
+	db CHAR_ID_ATHENA, CHAR_ID_CHIZURU, CHAR_ID_MRKARATE, CHAR_ID_ROULETTE, CHAR_ID_GOENITZ, CHAR_ID_LEONA
 	; [TCRF] Unused entries in the list. Not used by tile flipping since it switches between hardcoded char IDs.
 	;        These may have been used before the tile flipping was implemented, and still work properly.
 	;        They all work as intended as they also have (unused) CharSel_CursorPosTable entries.
-	db CHAR_ID_OIORI/2
-	db CHAR_ID_OLEONA/2
-	db CHAR_ID_KAGURA/2
+	db CHAR_ID_OIORI
+	db CHAR_ID_OLEONA
+	db CHAR_ID_KAGURA
 .end:
 ; Relative tile IDs for portraits
 BG_CharSel_Portrait: INCBIN "data/bg/charsel_portrait.bin"
