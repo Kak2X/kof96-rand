@@ -142,6 +142,8 @@ Module_CharSel:
 	jr   c, .cpu1P_noBoss				; If not, skip
 	ld   a, CHARSEL_MODE_CONFIRMED
 	ld   [wCharSelP1CursorMode], a
+	ld   hl, wOBJInfo_Pl1+iOBJInfo_Status
+	res  OSTB_VISIBLE, [hl]
 .cpu1P_noBoss:
 	;
 	; If the CPU lost, clear out its selected opponents.
@@ -166,6 +168,8 @@ Module_CharSel:
 	jr   c, .cpu2P_noBoss				; If not, skip
 	ld   a, CHARSEL_MODE_CONFIRMED
 	ld   [wCharSelP2CursorMode], a
+	ld   hl, wOBJInfo_Pl2+iOBJInfo_Status
+	res  OSTB_VISIBLE, [hl]
 .cpu2P_noBoss:
 	ld   hl, wCharSelP2Char0			; HL = Cursor position
 	ld   de, wCharSelP2CursorPos		; DE = Cursor position
@@ -356,7 +360,7 @@ Module_CharSel:
 .singleChkIconP2_do:
 	ld   a, [hl]
 	cp   CHAR_ID_NONE				; Has P2 the first character selected?
-	jp   z, .initOBJ				; If not, skip
+	jp   z, .initDefaultNames				; If not, skip
 	
 	; Otherwise, draw the character icon
 	ld   de, $8FC0
@@ -366,7 +370,7 @@ Module_CharSel:
 	; And print its name
 	ld   de, wOBJInfo_Pl2		;2P side
 	call CharSel_PrintCharName
-	jp   .initOBJ
+	jp   .initDefaultNames
 ;--
 .drawBG_Team:
 	ld   hl, TextDef_CharSel_TeamTitle
@@ -535,7 +539,7 @@ Module_CharSel:
 	; Player 2 - Icon 2
 	ldi  a, [hl]
 	cp   CHAR_ID_NONE
-	jp   z, .initOBJ
+	jp   z, .initDefaultNames
 	push hl
 		ld   de, $9270
 		ld   hl, BG_CHARSEL_P2ICON1
@@ -548,7 +552,7 @@ Module_CharSel:
 	; Player 2 - Icon 3
 	ld   a, [hl]
 	cp   CHAR_ID_NONE
-	jp   z, .initOBJ
+	jp   z, .initDefaultNames
 	ld   de, $92B0
 	ld   hl, BG_CHARSEL_P2ICON2
 	ld   c, TILE_CHARSEL_P2ICON2
@@ -882,6 +886,18 @@ CharSel_Mode_Ready:
 	
 ; =============== .removeOne ===============
 .removeOne:
+	; If any character was roulette'd, clear everything.
+	; This prevents fun issues if erasing the last character, then selecting a normal non-roulette one.
+	ld   de, wCharSelRouletteFlags2P
+	ld   a, [wCharSelCurPl]
+	or   a							; Currently handling player 1?
+	jp   nz, .removeOne_chkRoulette	; If not, skip
+	ld   de, wCharSelRouletteFlags1P
+.removeOne_chkRoulette:
+	ld   a, [de]
+	and  a
+	jr   nz, .removeAll
+	
 	; Remove the third character from the team
 	call CharSel_HideStartText	; For changing mode
 	call CharSel_RemoveChar
@@ -1209,9 +1225,10 @@ ENDR
 		ld   a, h		; Only pick the high byte (which will always be in $00-$11 range)
 	pop  hl
 	;--
-	; This is fine because the range excludes the roulette character.
 	
 	; Regenerate it if the portrait is locked 
+	cp   a, CHARSEL_ID_ROULETTE
+	jp   z, .genRandomPos	; Don't let the randomizer select this!
 	push af
 		call CharSel_IsPortraitLocked	; Is this a locked character?
 		jp   nc, .setRandomPos			; If not, jump
@@ -3161,13 +3178,12 @@ CharSel_DrawUnlockedChars:
 
 	; Mr. Karate is only drawn when the "All Characters" dip switch is set
 	ld   a, b
-	cp   CHARSEL_ID_MRKARATE0	; Trying to draw the first part of Mr. Karate's portrait?
-	jp   z, .chkUnlockMrKarate	; If so, jump
-	jp   .chkGoenitz			; Skip ahead
+	cp   CHARSEL_ID_MRKARATE0	; Trying to draw Mr. Karate's portrait?
+	jp   nz, .chkGoenitz		; If not, jump
 .chkUnlockMrKarate:
 	ld   a, [wDipSwitch]
 	bit  DIPB_UNLOCK_OTHER, a	; Are all characters unlocked?
-	jp   nz, .charOk			; If so, jump
+	jp   nz, .chkLockRoulette	; If so, jump
 	; Otherwise, disable his slots and skip him
 	ld   a, CHAR_ID_NONE
 	ld   [wCharSelIdMapTbl+CHARSEL_ID_MRKARATE0], a
@@ -3176,21 +3192,26 @@ CharSel_DrawUnlockedChars:
 	ld   a, b
 	cp   CHARSEL_ID_GOENITZ		; Trying to draw Goenitz's portrait?
 	jp   z, .chkUnlockGoenitz	; If so, jump
-	jp   .charOk				; Everything else can be drawn
+	jp   .chkLockRoulette		; Everything else can be drawn
 .chkUnlockGoenitz:
 	ld   a, [wDipSwitch]
 	bit  DIPB_UNLOCK_GOENITZ, a	; Is Goenitz unlocked?
-	jp   nz, .charOk			; If so, jump
+	jp   nz, .chkLockRoulette			; If so, jump
 	; Otherwise, disable his slot and skip him
 	ld   a, CHAR_ID_NONE
 	ld   [wCharSelIdMapTbl+CHARSEL_ID_GOENITZ], a
-	jp   .nextChar
+	jr   .nextChar
 
+.chkLockRoulette:
 	;
 	; Prevent the Roulette from being selected in Serial VS mode.
 	;
 	; Don't trust random shit to sync when two DMGs are involved.
 	;
+	ld   a, b
+	cp   CHARSEL_ID_ROULETTE	; Trying to draw the Roulette?
+	jp   nz, .charOk			; If not, skip	
+	
 	ld   a, [wPlayMode]
 	bit  MODEB_VS, a			; Playing in VS mode?
 	jr   z, .charOk				; If not, skip
@@ -3774,13 +3795,13 @@ Module_OrdSel:
 	; Draw 2P char 3 if it exists
 	ld   a, [wOrdSelP2CharSel2]
 	cp   $00
-	jr   nz, .initOBJ
+	jr   nz, .initDefaultNames
 	ld   de, BG_OrdSel_Char2P
 	ld   hl, $992B				; Leftmost
 	ld   a, $DA
 	call OrdSel_CopyCharBG
 	
-.initOBJ:
+.initDefaultNames:
 	;
 	; Load sprite mappings for cursors
 	; These reuse the base OBJInfo from character select screen
