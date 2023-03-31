@@ -486,7 +486,7 @@ SGBPacket_Pat_AllPal0:
 	
 SGBPacket_CharSelect_Pat:
 	pkg SGB_PACKET_ATTR_BLK, $02
-	db $04	; 4 Sets
+	db $05	; 5 Sets
 	;--
 	; Base red palette
 	db %00000011 ; Change inside/box border
@@ -520,12 +520,14 @@ SGBPacket_CharSelect_Pat:
 	db $0F ; X2
 	db $08 ; Y2
 	;--
-	db $00
-	db $00
-	db $00
-	db $00
-	db $00
-	db $00
+	; Color Roulette blue
+	db %00000011 ; Change inside/box border
+	ads 2,2,2 ; Pals
+	db $0A ; X1
+	db $09 ; Y1
+	db $0C ; X2
+	db $0B ; Y2
+	;--
 
 	mIncJunk "L0442A1"
 	
