@@ -117,6 +117,10 @@ ENDC
 	call TextPrinter_Instant
 	ld   hl, TextDef_Menu_TeamVS
 	call TextPrinter_Instant
+	ld   hl, TextDef_Menu_SingleCpuVsCpu
+	call TextPrinter_Instant
+	ld   hl, TextDef_Menu_TeamCpuVsCpu
+	call TextPrinter_Instant
 	ld   hl, TextDef_Options_Title
 	call TextPrinter_Instant
 	ld   hl, TextDef_Options_Time
@@ -633,6 +637,10 @@ Title_Mode_ModeSelect:
 	jp   z, .singleVS
 	cp   MODESELECT_ACT_TEAMVS
 	jp   z, .teamVS
+	cp   MODESELECT_ACT_CPUSINGLE
+	jp   z, .singleCPU
+	cp   MODESELECT_ACT_CPUTEAM
+	jp   z, .teamCPU
 	ret ; We never get here
 .checkOtherPl:
 	; Check if the other player (over serial only) sent us a mode id value.
@@ -710,7 +718,14 @@ ENDC
 	ld   a, MODE_TEAMVS
 	ld   [wPlayMode], a
 	jp   ModeSelect_PrepVS
-	
+.singleCPU:
+	ld   a, MODE_SINGLEVS
+	ld   [wPlayMode], a
+	jp   ModeSelect_PrepVSCPU
+.teamCPU:
+	ld   a, MODE_TEAMVS
+	ld   [wPlayMode], a
+	jp   ModeSelect_PrepVSCPU
 ; =============== ModeSelect_Prep* ===============
 ; Sets of functions to set which players are controlled by the CPU, depending on the mode.
 
@@ -750,11 +765,7 @@ ENDC
 	ld   [hl], $00
 	jp   ModeSelect_SwitchToCharSelect
 
-IF REV_VER_2 == 0	
-; [TCRF] Unreferenced code.
-;        Sets up a CPU vs CPU battle in VS mode, which in the Japanese version
-;        can't be triggered by one player.
-ModeSelect_Unused_PrepVSCPU:
+ModeSelect_PrepVSCPU:
 	; P1: CPU, P2: CPU
 	ld   hl, wPlInfo_Pl1+iPlInfo_Flags0
 	set  PF0B_CPU, [hl]
@@ -764,7 +775,6 @@ ModeSelect_Unused_PrepVSCPU:
 	ld   hl, wCharSeqId
 	ld   [hl], $00
 	; Fall-through
-ENDC
 	
 ModeSelect_SwitchToCharSelect:
 	call ModeSelect_CheckCPUvsCPU
@@ -843,14 +853,20 @@ ModeSelect_DoCtrl:
 	; Move cursor up, and wrap around
 	ld   a, [wTitleSubMenuOptId]
 	dec  a
-	and  a, $03
+	cp   a, $FF
+	jr   nz, .moveUOk ; hitting 0 is already out
+	ld   a, $05
+.moveUOk:
 	ld   [wTitleSubMenuOptId], a
 	jp   .setYPos
 .moveD:
 	; Move cursor down, and wrap around
 	ld   a, [wTitleSubMenuOptId]
 	inc  a
-	and  a, $03
+	cp   a, $06
+	jr   nz, .moveDOk
+	xor  a
+.moveDOk:
 	ld   [wTitleSubMenuOptId], a
 .setYPos:
 	; Set the cursor's Y position (Y = wTitleSubMenuOptId * 10) and show it, even if for a single frame
@@ -2223,6 +2239,18 @@ TextDef_Menu_TeamVS:
 	db .end-.start
 .start:
 	db "TEAM VS"
+.end:
+TextDef_Menu_SingleCpuVsCpu:
+	dw $9A24
+	db .end-.start
+.start:
+	db "SINGLE WATCH"
+.end:
+TextDef_Menu_TeamCpuVsCpu:
+	dw $9A64
+	db .end-.start
+.start:
+	db "TEAM WATCH"
 .end:
 TextDef_Options_Title:
 	dw $98B7

@@ -5,7 +5,7 @@ SKIP_JUNK    EQU 1 ; Removes padding areas
 LABEL_JUNK   EQU 0 ; If SKIP_JUNK isn't set, labels the padding areas.
 FIX_BUGS     EQU 1 ; Self explainatory
 OPTIMIZE     EQU 1 ; Additional optimizations
-NO_CPU_AI    EQU 1 ; Disable CPU Opponent AI (but not the CPU-specific actions inside moves)
+NO_CPU_AI    EQU 0 ; Disable CPU Opponent AI (but not the CPU-specific actions inside moves)
 INF_TIMER    EQU 0 ; Default with infinite timer 
 
 REV_VER_2    EQU 1 ; If set, use the second revision of the game.
