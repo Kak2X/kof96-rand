@@ -1,6 +1,3 @@
-# trash
-trash/
-
 # build output
 kof96.gb
 kof96.gbc
@@ -8,18 +5,6 @@ kof96.map
 kof96.o
 kof96.sym
 kof96.sn*
-kof96e.gb
-kof96e.gbc
-kof96e.map
-kof96e.o
-kof96e.sym
-kof96e.sn*
-
-# provide your own comparision rom
-original_jp.gb
-original_jp.sym
-original_en.gb
-original_en.sym
 
 # not necessary
 tempconv.txt

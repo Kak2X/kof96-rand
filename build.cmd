@@ -1,6 +1,6 @@
 @echo off
 echo Assembling...
-rgbds\rgbasm -h -L -vo -v -o kof96.o config-nojunk.asm
+rgbds\rgbasm -h -L -vo -v -o kof96.o config.asm
 if %ERRORLEVEL% neq 0 goto assemble_fail
 
 echo Linking...
