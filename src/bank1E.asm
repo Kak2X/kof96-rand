@@ -76,7 +76,7 @@ Module_CharSel:
 	ldi  [hl], a
 	inc  de
 	dec  b
-	jp   nz, .idInitLoop
+	jr   nz, .idInitLoop
 	
 	
 	; Init
@@ -118,7 +118,7 @@ Module_CharSel:
 
 	ld   a, [wPlayMode]
 	bit  MODEB_VS, a			; Is VS mode?
-	jp   nz, .initVSMode		; If so, jump
+	jr   nz, .initVSMode		; If so, jump
 	
 .init1PMode:
 	;
@@ -127,7 +127,7 @@ Module_CharSel:
 	;
 	ld   a, [wJoyActivePl]
 	or   a						; Playing on the Pl1 side? (== PL1)
-	jp   z, .cpu2P				; If so, jump
+	jr   z, .cpu2P				; If so, jump
 .cpu1P:
 	; We're playing on the 2P side, and the CPU is 1P
 	
@@ -152,8 +152,8 @@ Module_CharSel:
 	
 	ld   a, [wLastWinner]		
 	bit  PLB1, a						; Did the CPU win?
-	jp   z, .clearCPUTeam				; If not, jump
-	jp   .lost				
+	jr   z, .clearCPUTeam				; If not, jump
+	jr   .chkInitialMode				
 	
 .cpu2P:
 	; Same thing as above, except when playing as 1P
@@ -172,10 +172,10 @@ Module_CharSel:
 	
 	ld   a, [wLastWinner]
 	bit  PLB2, a						; Did the other player win?
-	jp   z, .clearCPUTeam				; If not, jump
+	jr   z, .clearCPUTeam				; If not, jump
 	
-.lost:
-	jp   .chkInitialMode
+;.lost:
+	jr   .chkInitialMode
 
 ;	; The player lost the previous match, so the CPU keeps its opponents.
 ;	
@@ -235,7 +235,7 @@ Module_CharSel:
 	; when the player can select them.
 	call CharSel_DrawCrossOnDefeatedChars
 	
-	jp   .chkInitialMode
+	jr   .chkInitialMode
 	
 ;.bossSeqSpecial:
 ;	ld   bc, wCharSelP2CursorMode
@@ -252,7 +252,7 @@ Module_CharSel:
 .initVSMode:
 	; In an endless CPU vs CPU battle, the game autopicks characters for both players.
 	call CharSel_IsEndlessCpuVsCpu
-	jp   nc, .chkInitialMode
+	jr   nc, .chkInitialMode
 	ld   a, $01						
 	ld   [wCharSelRandom1P], a
 	ld   [wCharSelRandom2P], a
@@ -273,19 +273,19 @@ Module_CharSel:
 	ld   de, wCharSelP2Char2
 	ld   a, [wPlayMode]
 	bit  MODEB_TEAM, a					; Is team mode?
-	jp   nz, .chkInitialModeP1			; If so, skip
+	jr   nz, .chkInitialModeP1			; If so, skip
 	ld   hl, wCharSelP1Char0
 	ld   de, wCharSelP2Char0
 .chkInitialModeP1:
 	ld   a, [hl]
 	cp   CHAR_ID_NONE					; Is the first character empty?
-	jp   z, .chkInitialModeP2			; If so, skip
+	jr   z, .chkInitialModeP2			; If so, skip
 	ld   a, CHARSEL_MODE_READY			; Otherwise, skip to the next mode for P1
 	ld   [wCharSelP1CursorMode], a
 .chkInitialModeP2:
 	ld   a, [de]						; Same as above, for P2
 	cp   CHAR_ID_NONE
-	jp   z, .drawBG
+	jr   z, .drawBG
 	ld   a, CHARSEL_MODE_READY
 	ld   [wCharSelP2CursorMode], a
 	
@@ -331,8 +331,8 @@ Module_CharSel:
 	ld   hl, wPlInfo_Pl1+iPlInfo_TeamCharId0	; Otherwise, use the confirmed one
 .singleChkIconP1_do:
 	ld   a, [hl]
-	cp   CHAR_ID_NONE				; Has P1 the first character selected?
-	jp   z, .singleChkIconP2		; If not, skip
+	cp   CHAR_ID_NONE							; Has P1 the first character selected?
+	jr   z, .singleInitDefaultName1P			; If not, skip
 	
 	; Otherwise, draw the character icon
 	ld   de, $8F80					; Where to load GFX
@@ -341,6 +341,13 @@ Module_CharSel:
 	call CharSel_DrawP1CharIcon
 	; And print its name
 	ld   de, wOBJInfo_Pl1			; 1P side
+	call CharSel_PrintCharName
+	jr   .singleChkIconP2
+
+.singleInitDefaultName1P:
+	ld   a, [wCharSelP1CursorPos]
+	ld   de, wOBJInfo_Pl1
+	call CharSel_GetCharIdByPortraitId
 	call CharSel_PrintCharName
 	
 .singleChkIconP2:
@@ -354,8 +361,8 @@ Module_CharSel:
 	ld   hl, wPlInfo_Pl2+iPlInfo_TeamCharId0	; Otherwise, use the confirmed one
 .singleChkIconP2_do:
 	ld   a, [hl]
-	cp   CHAR_ID_NONE				; Has P2 the first character selected?
-	jp   z, .initDefaultNames				; If not, skip
+	cp   CHAR_ID_NONE							; Has P2 the first character selected?
+	jr   z, .singleInitDefaultName2P			; If not, skip
 	
 	; Otherwise, draw the character icon
 	ld   de, $8FC0
@@ -365,7 +372,13 @@ Module_CharSel:
 	; And print its name
 	ld   de, wOBJInfo_Pl2		;2P side
 	call CharSel_PrintCharName
-	jp   .initDefaultNames
+	jp   .initOBJ
+.singleInitDefaultName2P:
+	ld   a, [wCharSelP2CursorPos]
+	ld   de, wOBJInfo_Pl2
+	call CharSel_GetCharIdByPortraitId
+	call CharSel_PrintCharName
+	jp   .initOBJ
 ;--
 .drawBG_Team:
 	ld   hl, TextDef_CharSel_TeamTitle
@@ -390,11 +403,11 @@ Module_CharSel:
 	; No "boss rounds" in VS mode
 	ld   a, [wPlayMode]
 	bit  MODEB_VS, a			; Playing in VS mode?
-	jp   nz, .team1PDrawEmpty	; If so, jump
+	jr   nz, .team1PDrawEmpty	; If so, jump
 	; 2P should be the active player
 	ld   a, [wJoyActivePl]
 	or   a						; Are we playing on the 1P side? (wJoyActivePl == PL1)
-	jp   z, .team1PDrawEmpty	; If so, jump
+	jr   z, .team1PDrawEmpty	; If so, jump
 	
 ; hack
 ;	; Stage sequence check
@@ -425,11 +438,11 @@ Module_CharSel:
 	; No "boss rounds" in VS mode
 	ld   a, [wPlayMode]
 	bit  MODEB_VS, a			; Playing in VS mode?
-	jp   nz, .team2PDrawEmpty	; If so, jump
+	jr   nz, .team2PDrawEmpty	; If so, jump
 	; 1P should be the active player
 	ld   a, [wJoyActivePl]
 	or   a						; Are we playing on the 1P side? (wJoyActivePl == PL1)
-	jp   nz, .team2PDrawEmpty	; If *not*, jump
+	jr   nz, .team2PDrawEmpty	; If *not*, jump
 ; hack
 ;	; Stage sequence check
 ;	ld   a, [wCharSeqId]
@@ -468,7 +481,7 @@ Module_CharSel:
 .fillSelChars1P_do:
 	ldi  a, [hl]
 	cp   CHAR_ID_NONE				; Is there a character on the first slot?
-	jr   z, .fillSelChars2P			; If not, skip
+	jr   z, .initDefaultName1P		; If not, skip
 	
 	; Because the player 1 icons are X flipped, the BG_CHARSEL_P1ICON* are offset by 1
 	; to point to the top-right tile of the icon. See also: Char_DrawIconFlipX
@@ -507,6 +520,12 @@ Module_CharSel:
 	call CharSel_DrawP1CharIcon
 	ld   de, wOBJInfo_Pl1
 	call CharSel_PrintCharName
+	jr   .fillSelChars2P
+.initDefaultName1P:
+	ld   a, [wCharSelP1CursorPos]
+	ld   de, wOBJInfo_Pl1
+	call CharSel_GetCharIdByPortraitId
+	call CharSel_PrintCharName
 	
 .fillSelChars2P:
 
@@ -516,12 +535,11 @@ Module_CharSel:
 	cp   a, CHARSEL_MODE_CONFIRMED
 	jr   nz, .fillSelChars2P_do
 	ld   hl, wPlInfo_Pl2+iPlInfo_TeamCharId0
-
 .fillSelChars2P_do:
 	; Player 2 - Icon 1
 	ldi  a, [hl]
 	cp   CHAR_ID_NONE
-	jp   z, .initDefaultNames
+	jr   z, .initDefaultName2P
 	push hl
 		ld   de, $8FC0
 		ld   hl, BG_CHARSEL_P2ICON0
@@ -534,7 +552,7 @@ Module_CharSel:
 	; Player 2 - Icon 2
 	ldi  a, [hl]
 	cp   CHAR_ID_NONE
-	jp   z, .initDefaultNames
+	jr   z, .initOBJ
 	push hl
 		ld   de, $9270
 		ld   hl, BG_CHARSEL_P2ICON1
@@ -547,24 +565,18 @@ Module_CharSel:
 	; Player 2 - Icon 3
 	ld   a, [hl]
 	cp   CHAR_ID_NONE
-	jp   z, .initDefaultNames
+	jr   z, .initOBJ
 	ld   de, $92B0
 	ld   hl, BG_CHARSEL_P2ICON2
 	ld   c, TILE_CHARSEL_P2ICON2
 	call CharSel_DrawP2CharIcon
 	ld   de, wOBJInfo_Pl2
 	call CharSel_PrintCharName
+	jr   .initOBJ
 	
-.initDefaultNames:
-	; Initialize both default names, like in 95.
-	
-	ld   a, [wCharSelP1CursorPos]
-	ld   de, wOBJInfo_Pl1+iOBJInfo_Status
-	call CharSel_GetCharIdByPortraitId
-	call CharSel_PrintCharName
-
+.initDefaultName2P:
 	ld   a, [wCharSelP2CursorPos]
-	ld   de, wOBJInfo_Pl2+iOBJInfo_Status
+	ld   de, wOBJInfo_Pl2
 	call CharSel_GetCharIdByPortraitId
 	call CharSel_PrintCharName
 	
@@ -598,7 +610,7 @@ Module_CharSel:
 	; Set the correct sprites for the normal/wide versions
 	ld   a, [wPlInfo_Pl1+iPlInfo_Flags0]
 	bit  PF0B_CPU, a			; Is this character a CPU?
-	jp   nz, .cursorCPU_1P	; If so, jump
+	jr   nz, .cursorCPU_1P	; If so, jump
 	
 .cursorPl_1P:
 	; Use this as current 1P cursor and when moving on a normal portrait
@@ -609,7 +621,7 @@ Module_CharSel:
 	; Use the ptr table entry right after when moving on a wide portrait
 	add  a, CHARSEL_OBJ_CURSOR1PWIDE - CHARSEL_OBJ_CURSOR1P
 	ld   [de], a	; Save to iOBJInfo_CharSel_CursorWideOBJId
-	jp   .cursorRefresh_1P
+	jr   .cursorRefresh_1P
 .cursorCPU_1P:
 	; Cursor for the CPU, regardless of the player having control or not
 	ld   a, CHARSEL_OBJ_CURSORCPU1P
@@ -652,7 +664,7 @@ Module_CharSel:
 	; Set the correct sprites for the normal/wide versions
 	ld   a, [wPlInfo_Pl2+iPlInfo_Flags0]
 	bit  PF0B_CPU, a			; Is this character a CPU?
-	jp   nz, .cursorCPU_2P	; If so, jump
+	jr   nz, .cursorCPU_2P	; If so, jump
 	
 .cursorPl_2P:
 	; Use this as current 2P cursor and when moving on a normal portrait
@@ -663,7 +675,7 @@ Module_CharSel:
 	; Use the ptr table entry right after when moving on a wide portrait
 	add  a, CHARSEL_OBJ_CURSOR2PWIDE - CHARSEL_OBJ_CURSOR2P
 	ld   [de], a	; Save to iOBJInfo_CharSel_CursorWideOBJId
-	jp   .cursorRefresh_2P
+	jr   .cursorRefresh_2P
 .cursorCPU_2P:
 	; Cursor for the CPU, regardless of the player having control or not
 	ld   a, CHARSEL_OBJ_CURSORCPU2P
@@ -751,7 +763,7 @@ Module_CharSel:
 	;
 	ld   a, [wPlayMode]
 	bit  MODEB_VS, a	; Playing in VS mode? 
-	jp   z, .initEnd		; If not, skip
+	jr   z, .initEnd		; If not, skip
 	call Rand
 	and  a, $03
 	ld   [wStageId], a
@@ -784,14 +796,14 @@ Module_CharSel:
 	; Unless both players have confirmed their characters, continue looping
 	ld   a, [wCharSelP1CursorMode]
 	cp   CHARSEL_MODE_CONFIRMED		; Did player 1 confirm their character(s)?
-	jp   nz, .noEnd					; If not, jump
+	jr   nz, .noEnd					; If not, jump
 	ld   a, [wCharSelP2CursorMode]
 	cp   CHARSEL_MODE_CONFIRMED		; Did player 2 confirm their character(s)?
-	jp   nz, .noEnd					; If not, jump
-	jp   .end						; Otherwise, we're done
+	jr   nz, .noEnd					; If not, jump
+	jr   .end						; Otherwise, we're done
 .noEnd:
 	call Task_PassControl_NoDelay
-	jp   .mainLoop
+	jr   .mainLoop
 .end:
 
 	; Wait for $3C frames before switching
@@ -3803,13 +3815,13 @@ Module_OrdSel:
 	; Draw 2P char 3 if it exists
 	ld   a, [wOrdSelP2CharSel2]
 	cp   $00
-	jr   nz, .initDefaultNames
+	jr   nz, .initOBJ
 	ld   de, BG_OrdSel_Char2P
 	ld   hl, $992B				; Leftmost
 	ld   a, $DA
 	call OrdSel_CopyCharBG
 	
-.initDefaultNames:
+.initOBJ:
 	;
 	; Load sprite mappings for cursors
 	; These reuse the base OBJInfo from character select screen
