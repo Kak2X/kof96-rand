@@ -268,8 +268,6 @@ NEXTU
 ;
 ; ORDER SELECT
 ;
-wOrdSelCPUDelay1P           EQU wCharSelP1CursorPos ; Delay between CPU picks
-wOrdSelCPUDelay2P           EQU wCharSelP2CursorPos ; Delay between CPU picks
 ds $C1B4-$C1B3
 wOrdSelP1CharsSelected      :db ; EQU $C1B4
 wOrdSelP2CharsSelected      :db ; EQU $C1B5
@@ -297,6 +295,8 @@ wOrdSelP2CharId2            :db ; EQU $C1D9
 ; Backup copies of the wOrdSelP*CursorPos, used by OrdSel_Ctrl_SelChar
 wOrdSelP1CursorPosBak       :db ; EQU $C1DA
 wOrdSelP2CursorPosBak       :db ; EQU $C1DB
+wOrdSelCPUDelay1P           :db
+wOrdSelCPUDelay2P           :db
 NEXTU
 
 ;
