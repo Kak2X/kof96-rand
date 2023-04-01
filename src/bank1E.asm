@@ -232,13 +232,14 @@ Module_CharSel:
 	ldi  [hl], a
 	ldi  [hl], a
 	ld   [hl], a
-	jp   .chkInitialMode
-	
+
 	; Draw the cross over defeated characters.
 	; This is specifically only done while the CPU picks a new set of characters,
 	; presumably because it would be annoying having the crosses cover the portraits
 	; when the player can select them.
 	call CharSel_DrawCrossOnDefeatedChars
+	
+	jp   .chkInitialMode
 	
 ;.bossSeqSpecial:
 ;	ld   bc, wCharSelP2CursorMode
