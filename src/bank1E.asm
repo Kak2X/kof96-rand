@@ -142,8 +142,6 @@ Module_CharSel:
 	jr   c, .cpu1P_noBoss				; If not, skip
 	ld   a, CHARSEL_MODE_CONFIRMED
 	ld   [wCharSelP1CursorMode], a
-	ld   hl, wOBJInfo_Pl1+iOBJInfo_Status
-	res  OSTB_VISIBLE, [hl]
 .cpu1P_noBoss:
 	;
 	; If the CPU lost, clear out its selected opponents.
@@ -168,8 +166,6 @@ Module_CharSel:
 	jr   c, .cpu2P_noBoss				; If not, skip
 	ld   a, CHARSEL_MODE_CONFIRMED
 	ld   [wCharSelP2CursorMode], a
-	ld   hl, wOBJInfo_Pl2+iOBJInfo_Status
-	res  OSTB_VISIBLE, [hl]
 .cpu2P_noBoss:
 	ld   hl, wCharSelP2Char0			; HL = Cursor position
 	ld   de, wCharSelP2CursorPos		; DE = Cursor position
@@ -333,7 +329,6 @@ Module_CharSel:
 	cp   a, CHARSEL_MODE_CONFIRMED				; Already confirmed?
 	jr   nz, .singleChkIconP1_do				; If not, skip
 	ld   hl, wPlInfo_Pl1+iPlInfo_TeamCharId0	; Otherwise, use the confirmed one
-
 .singleChkIconP1_do:
 	ld   a, [hl]
 	cp   CHAR_ID_NONE				; Has P1 the first character selected?
@@ -357,7 +352,6 @@ Module_CharSel:
 	cp   a, CHARSEL_MODE_CONFIRMED				; Already confirmed?
 	jr   nz, .singleChkIconP2_do				; If not, skip
 	ld   hl, wPlInfo_Pl2+iPlInfo_TeamCharId0	; Otherwise, use the confirmed one
-
 .singleChkIconP2_do:
 	ld   a, [hl]
 	cp   CHAR_ID_NONE				; Has P2 the first character selected?
@@ -566,12 +560,13 @@ Module_CharSel:
 	
 	ld   a, [wCharSelP1CursorPos]
 	ld   de, wOBJInfo_Pl1+iOBJInfo_Status
-	call CharSel_RefreshNameAndCursor
+	call CharSel_GetCharIdByPortraitId
+	call CharSel_PrintCharName
 
 	ld   a, [wCharSelP2CursorPos]
 	ld   de, wOBJInfo_Pl2+iOBJInfo_Status
-	call CharSel_RefreshNameAndCursor
-
+	call CharSel_GetCharIdByPortraitId
+	call CharSel_PrintCharName
 	
 ;--
 .initOBJ:
@@ -586,6 +581,11 @@ Module_CharSel:
 	;
 	; Player 1 Cursor
 	;
+	
+	; Don't show it if it's already confirmed
+	ld   a, [wCharSelP1CursorMode]
+	cp   a, CHARSEL_MODE_CONFIRMED
+	jr   z, .cursor_2P
 	
 	; Initialize the sprite
 	ld   hl, wOBJInfo_Pl1
@@ -631,6 +631,11 @@ Module_CharSel:
 	;
 	; Do the same thing, but for player 2
 	
+	; Don't show it if it's already confirmed
+	ld   a, [wCharSelP2CursorMode]
+	cp   a, CHARSEL_MODE_CONFIRMED
+	jr   z, .initTileFlipOBJ
+	
 	; Initialize the sprite
 	ld   hl, wOBJInfo_Pl2
 	ld   de, OBJInfoInit_CharSel_Cursor
@@ -674,6 +679,8 @@ Module_CharSel:
 	ld   de, wOBJInfo_Pl2
 	call CharSel_RefreshCursor
 	
+	
+.initTileFlipOBJ:
 	;
 	; Set the sprite mappings for the three tile flip animations.
 	; Each of them takes its own wOBJInfo slot, and all are hidden by default.
