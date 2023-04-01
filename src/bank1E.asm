@@ -563,11 +563,11 @@ Module_CharSel:
 .initDefaultNames:
 	; Initialize both default names, like in 95.
 	
-	ld   hl, wCharSelP1CursorPos
+	ld   a, [wCharSelP1CursorPos]
 	ld   de, wOBJInfo_Pl1+iOBJInfo_Status
 	call CharSel_RefreshNameAndCursor
 
-	ld   hl, wCharSelP2CursorPos
+	ld   a, [wCharSelP2CursorPos]
 	ld   de, wOBJInfo_Pl2+iOBJInfo_Status
 	call CharSel_RefreshNameAndCursor
 
